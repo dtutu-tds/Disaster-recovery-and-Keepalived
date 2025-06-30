@@ -1,0 +1,38 @@
+version: "3.9"
+
+networks:
+  vip_net:                            # сеть для двух "виртуальных машин"
+    driver: macvlan                   # для вывода маши в L2 сеть, VRRP протокол будет виден всем соседям
+    driver_opts:
+      parent: ens3                    # мой физический интерфейс
+    ipam:                             # ip-шники пропишу контейнерам в ручную из этой подсетки
+      config:
+        - subnet: 192.168.100.0/24
+          gateway: 192.168.100.1
+
+services:
+  node1:
+    build: ./node                     # собираем образ из докерфайл'а
+    container_name: node1
+    networks:
+      vip_net:
+        ipv4_address: 192.168.100.11  # статик ip
+    cap_add: [ "NET_ADMIN", "NET_RAW" ]
+    sysctls:
+      net.ipv4.ip_nonlocal_bind: "1"  # 
+    environment:
+      ROLE: "MASTER"                  # передаю в Dockerfile
+      PRIORITY: "110"
+
+  node2:
+    build: ./node                     
+    container_name: node2
+    networks:
+      vip_net:
+        ipv4_address: 192.168.100.12
+    cap_add: [ "NET_ADMIN", "NET_RAW" ]
+    sysctls:
+      net.ipv4.ip_nonlocal_bind: "1"
+    environment:
+      ROLE: "BACKUP"
+      PRIORITY: "100"

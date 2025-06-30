@@ -1,0 +1,33 @@
+global_defs {
+    router_id $(hostname)
+    script_user root           # ← устраняет предупреждение безопасности
+}
+
+vrrp_script chk_web {
+    script "/usr/local/bin/check_web.sh"
+    interval ${INTERVAL}
+    fall 2
+    rise 1
+    weight -20
+}
+
+vrrp_instance VI_1 {
+    state ${ROLE}
+    interface eth0
+    virtual_router_id ${VRID}
+    priority ${PRIORITY}
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass Secr3t!
+    }
+
+    virtual_ipaddress {
+        ${VIP}
+    }
+
+    track_script {
+        chk_web
+    }
+}
